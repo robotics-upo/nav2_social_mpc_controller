@@ -22,10 +22,10 @@
 
 #include "geometry_msgs/msg/pose2_d.hpp"
 #include "nav2_core/controller.hpp"
-#include "nav2_social_mpc_controller/obstacle_distance_interface.h"
+#include "nav2_social_mpc_controller/obstacle_distance_interface.hpp"
 #include "nav2_social_mpc_controller/optimizer.hpp"
 #include "nav2_social_mpc_controller/path_trajectorizer.hpp"
-#include "nav2_social_mpc_controller/people_interface.h"
+#include "nav2_social_mpc_controller/people_interface.hpp"
 #include "nav2_util/odometry_utils.hpp"
 #include "obstacle_distance_msgs/msg/obstacle_distance.hpp"
 #include "people_msgs/msg/people.hpp"
@@ -33,18 +33,20 @@
 #include "pluginlib/class_loader.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "visualization_msgs/msg/marker_array.hpp"
+#include "nav2_util/geometry_utils.hpp"
+#include "nav2_util/robot_utils.hpp"
+#include "nav2_social_mpc_controller/tools/path_handler.hpp"
+#include "nav2_social_mpc_controller/tools/type_definitions.hpp"
 
-// the agents status contain 6 values:
-// x, y, yaw, timestamp, lv, av
-// typedef Eigen::Matrix<double, 6, 1> AgentStatus;
-
-namespace nav2_social_mpc_controller {
+namespace nav2_social_mpc_controller
+{
 
 /**
  * @class nav2_social_mpc_controller::SocialMPCController
  * @brief social mpc controller plugin
  */
-class SocialMPCController : public nav2_core::Controller {
+class SocialMPCController : public nav2_core::Controller
+{
 public:
   /**
    * @brief Constructor for
@@ -65,10 +67,9 @@ public:
    * @param tf TF buffer
    * @param costmap_ros Costmap2DROS object of environment
    */
-  void configure(const rclcpp_lifecycle::LifecycleNode::SharedPtr &parent,
-                 std::string name, const std::shared_ptr<tf2_ros::Buffer> &tf,
-                 const std::shared_ptr<nav2_costmap_2d::Costmap2DROS>
-                     &costmap_ros) override;
+  void configure(const rclcpp_lifecycle::LifecycleNode::WeakPtr& parent, std::string name,
+                 std::shared_ptr<tf2_ros::Buffer> tf,
+                 std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
 
   /**
    * @brief Cleanup controller state machine
@@ -99,28 +100,27 @@ public:
    * evaluation results
    * @return          Best command
    */
-  geometry_msgs::msg::TwistStamped
-  computeVelocityCommands(const geometry_msgs::msg::PoseStamped &pose,
-                          const geometry_msgs::msg::Twist &velocity) override;
+  geometry_msgs::msg::TwistStamped computeVelocityCommands(const geometry_msgs::msg::PoseStamped& pose,
+                                                           const geometry_msgs::msg::Twist& velocity,
+                                                           nav2_core::GoalChecker* goal_checker) override;
+  void setSpeedLimit(const double& speed_limit, const bool& percentage) override;
 
   /**
    * @brief nav2_core setPlan - Sets the global plan
    * @param path The global plan
    */
-  void setPlan(const nav_msgs::msg::Path &path) override;
+  void setPlan(const nav_msgs::msg::Path& path) override;
 
-  void publish_people_traj(const std::vector<std::vector<AgentStatus>> &people,
-                           const std_msgs::msg::Header &header);
+  void publish_people_traj(const AgentsTrajectories& people, const std_msgs::msg::Header& header);
 
 protected:
-  /**
-   * @brief Transforms global plan into same frame as pose, clips far away poses
-   * and possibly prunes passed poses
-   * @param pose pose to transform
-   * @return Path in new frame
-   */
-  nav_msgs::msg::Path
-  transformGlobalPlan(const geometry_msgs::msg::PoseStamped &pose);
+  // /**
+  //  * @brief Transforms global plan into same frame as pose, clips far away poses
+  //  * and possibly prunes passed poses
+  //  * @param pose pose to transform
+  //  * @return Path in new frame
+  //  */
+  // nav_msgs::msg::Path transformGlobalPlan(const geometry_msgs::msg::PoseStamped& pose);
 
   /**
    * @brief Transform a pose to another frame.
@@ -129,9 +129,8 @@ protected:
    * @param out_pose transformed output
    * @return bool if successful
    */
-  bool transformPose(const std::string frame,
-                     const geometry_msgs::msg::PoseStamped &in_pose,
-                     geometry_msgs::msg::PoseStamped &out_pose) const;
+  bool transformPose(const std::string frame, const geometry_msgs::msg::PoseStamped& in_pose,
+                     geometry_msgs::msg::PoseStamped& out_pose) const;
 
   /**
    * @brief
@@ -142,106 +141,8 @@ protected:
    * @return true
    * @return false
    */
-  bool transformPoint(const std::string frame,
-                      const geometry_msgs::msg::PointStamped &in_point,
-                      geometry_msgs::msg::PointStamped &out_point) const;
-
-  // /**
-  //  * @brief Get lookahead distance
-  //  * @param cmd the current speed to use to compute lookahead point
-  //  * @return lookahead distance
-  //  */
-  // double getLookAheadDistance(const geometry_msgs::msg::Twist &);
-
-  // /**
-  //  * @brief Creates a PointStamped message for visualization
-  //  * @param carrot_pose Input carrot point as a PoseStamped
-  //  * @return CarrotMsg a carrot point marker, PointStamped
-  //  */
-  // std::unique_ptr<geometry_msgs::msg::PointStamped>
-  // createCarrotMsg(const geometry_msgs::msg::PoseStamped &carrot_pose);
-
-  // /**
-  //  * @brief Whether robot should rotate to rough path heading
-  //  * @param carrot_pose current lookahead point
-  //  * @param angle_to_path Angle of robot output relatie to carrot marker
-  //  * @return Whether should rotate to path heading
-  //  */
-  // bool shouldRotateToPath(const geometry_msgs::msg::PoseStamped
-  // &carrot_pose,
-  //                         double &angle_to_path);
-
-  // /**
-  //  * @brief Whether robot should rotate to final goal orientation
-  //  * @param carrot_pose current lookahead point
-  //  * @return Whether should rotate to goal heading
-  //  */
-  // bool
-  // shouldRotateToGoalHeading(const geometry_msgs::msg::PoseStamped
-  // &carrot_pose);
-
-  // /**
-  //  * @brief Create a smooth and kinematically smoothed rotation command
-  //  * @param linear_vel linear velocity
-  //  * @param angular_vel angular velocity
-  //  * @param angle_to_path Angle of robot output relatie to carrot marker
-  //  * @param curr_speed the current robot speed
-  //  */
-  // void rotateToHeading(double &linear_vel, double &angular_vel,
-  //                      const double &angle_to_path,
-  //                      const geometry_msgs::msg::Twist &curr_speed);
-
-  // /**
-  //  * @brief Whether collision is imminent
-  //  * @param robot_pose Pose of robot
-  //  * @param carrot_pose Pose of carrot
-  //  * @param linear_vel linear velocity to forward project
-  //  * @param angular_vel angular velocity to forward project
-  //  * @return Whether collision is imminent
-  //  */
-  // bool isCollisionImminent(const geometry_msgs::msg::PoseStamped &,
-  //                          const double &, const double &);
-
-  // /**
-  //  * @brief Whether point is in collision
-  //  * @param x Pose of pose x
-  //  * @param y Pose of pose y
-  //  * @return Whether in collision
-  //  */
-  // bool inCollision(const double &x, const double &y);
-
-  // /**
-  //  * @brief Cost at a point
-  //  * @param x Pose of pose x
-  //  * @param y Pose of pose y
-  //  * @return Cost of pose in costmap
-  //  */
-  // double costAtPose(const double &x, const double &y);
-
-  // /**
-  //  * @brief apply regulation constraints to the system
-  //  * @param linear_vel robot command linear velocity input
-  //  * @param dist_error error in the carrot distance and lookahead
-  //  distance
-  //  * @param lookahead_dist optimal lookahead distance
-  //  * @param curvature curvature of path
-  //  * @param speed Speed of robot
-  //  * @param pose_cost cost at this pose
-  //  */
-  // void applyConstraints(const double &dist_error, const double
-  // &lookahead_dist,
-  //                       const double &curvature,
-  //                       const geometry_msgs::msg::Twist &speed,
-  //                       const double &pose_cost, double &linear_vel);
-
-  // /**
-  //  * @brief Get lookahead point
-  //  * @param lookahead_dist Optimal lookahead distance
-  //  * @param path Current global path
-  //  * @return Lookahead point
-  //  */
-  // geometry_msgs::msg::PoseStamped
-  // getLookAheadPoint(const double &, const nav_msgs::msg::Path &);
+  bool transformPoint(const std::string frame, const geometry_msgs::msg::PointStamped& in_point,
+                      geometry_msgs::msg::PointStamped& out_point) const;
 
   std::shared_ptr<tf2_ros::Buffer> tf_;
   std::string plugin_name_;
@@ -251,9 +152,11 @@ protected:
   std::unique_ptr<ObstacleDistInterface> obsdist_interface_;
   OptimizerParams optimizer_params_;
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;
-  nav2_costmap_2d::Costmap2D *costmap_;
-  rclcpp::Logger logger_{rclcpp::get_logger("SocialMPCController")};
+  nav2_costmap_2d::Costmap2D* costmap_;
+  rclcpp::Logger logger_{ rclcpp::get_logger("SocialMPCController") };
 
+  double speed_limit;
+  bool percentage;
   double desired_linear_vel_;
   double lookahead_dist_;
   double rotate_to_heading_angular_vel_;
@@ -277,23 +180,13 @@ protected:
   double max_angular_accel_;
   double rotate_to_heading_min_angle_;
   double goal_dist_tol_;
+  double fov_angle_;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> local_path_pub_;
 
-  nav_msgs::msg::Path global_plan_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>>
-      global_path_pub_;
-  // std::shared_ptr<
-  //    rclcpp_lifecycle::LifecyclePublisher<geometry_msgs::msg::PointStamped>>
-  //    carrot_pub_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>>
-      local_path_pub_;
-
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<
-      visualization_msgs::msg::MarkerArray>>
-      people_traj_pub_;
-
-  // OptimizerParams optimizer_params_;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<visualization_msgs::msg::MarkerArray>> people_traj_pub_;
+  std::unique_ptr<mpc::PathHandler> path_handler_;
 };
 
-} // namespace nav2_social_mpc_controller
+}  // namespace nav2_social_mpc_controller
 
-#endif // NAV2_SOCIAL_MPC_CONTROLLER__MPC_CONTROLLER_HPP_
+#endif  // NAV2_SOCIAL_MPC_CONTROLLER__MPC_CONTROLLER_HPP_

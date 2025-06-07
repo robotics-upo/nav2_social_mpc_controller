@@ -20,10 +20,11 @@
 
 #include "nav2_path_trajectorizer/path_trajectorizer.hpp"
 
-namespace nav2_path_trajectorizer {
+namespace nav2_path_trajectorizer
+{
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char * argv[])
+{
   rclcpp::init(argc, argv);
   // std::shared_ptr<rclcpp::Node> node =
   //    rclcpp::Node::make_shared("test_path_trajectorizer");
@@ -33,7 +34,7 @@ int main(int argc, char *argv[]) {
   std::shared_ptr<tf2_ros::Buffer> tf_buffer_;
 
   node_lifecycle_ = std::make_shared<rclcpp_lifecycle::LifecycleNode>(
-      "PathTrajectorizerTestNode", rclcpp::NodeOptions());
+    "PathTrajectorizerTestNode", rclcpp::NodeOptions());
 
   tf_buffer_ = std::make_shared<tf2_ros::Buffer>(node_lifecycle_->get_clock());
 
@@ -43,25 +44,17 @@ int main(int argc, char *argv[]) {
   // Create the trajectorizer
   smoother_ = std::make_shared<nav2_path_trajectorizer::PathTrajectorizer>();
 
-  smoother_->configure(node_lifecycle_, "PathTrajectorizer", tf_buffer_,
-                       nullptr, nullptr);
+  smoother_->configure(node_lifecycle_, "PathTrajectorizer", tf_buffer_, nullptr, nullptr);
 
   smoother_->activate();
 
-  node_lifecycle_->set_parameter(
-      rclcpp::Parameter("PathTrajectorizer.omnidirectional", false));
-  node_lifecycle_->set_parameter(
-      rclcpp::Parameter("PathTrajectorizer.desired_linear_vel", 0.4));
-  node_lifecycle_->set_parameter(
-      rclcpp::Parameter("PathTrajectorizer.lookahead_dist", 0.4));
-  node_lifecycle_->set_parameter(
-      rclcpp::Parameter("PathTrajectorizer.max_angular_vel", 1.0));
-  node_lifecycle_->set_parameter(
-      rclcpp::Parameter("PathTrajectorizer.transform_tolerance", 0.1));
-  node_lifecycle_->set_parameter(
-      rclcpp::Parameter("PathTrajectorizer.base_frame", "base_link"));
-  node_lifecycle_->set_parameter(
-      rclcpp::Parameter("PathTrajectorizer.time_step", 0.01));
+  node_lifecycle_->set_parameter(rclcpp::Parameter("PathTrajectorizer.omnidirectional", false));
+  node_lifecycle_->set_parameter(rclcpp::Parameter("PathTrajectorizer.desired_linear_vel", 0.4));
+  node_lifecycle_->set_parameter(rclcpp::Parameter("PathTrajectorizer.lookahead_dist", 0.4));
+  node_lifecycle_->set_parameter(rclcpp::Parameter("PathTrajectorizer.max_angular_vel", 1.0));
+  node_lifecycle_->set_parameter(rclcpp::Parameter("PathTrajectorizer.transform_tolerance", 0.1));
+  node_lifecycle_->set_parameter(rclcpp::Parameter("PathTrajectorizer.base_frame", "base_link"));
+  node_lifecycle_->set_parameter(rclcpp::Parameter("PathTrajectorizer.time_step", 0.01));
 
   // Create a path
   nav_msgs::msg::Path path;
@@ -93,7 +86,7 @@ int main(int argc, char *argv[]) {
     path.poses.push_back(p);
   }
 
-  rclcpp::Rate r(1); // Hz
+  rclcpp::Rate r(1);  // Hz
   for (unsigned int i = 0; i < 20; i++) {
     // call the smoother
     smoother_->smooth(path, 2.0);

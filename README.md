@@ -67,17 +67,33 @@ controller_server:
       plugin: "nav2_social_mpc_controller::SocialMPCController"
       trajectorizer:
         omnidirectional: false
-        desired_linear_vel: 0.5
-        lookahead_dist: 0.35
-        max_angular_vel: 1.0
-        transform_tolerance: 0.1
-        base_frame: "base_footprint"
-        time_step: 0.05
+        desired_linear_vel: 0.6
+        lookahead_dist: 2.0
+        max_angular_vel: 1.4
+        transform_tolerance: 0.5
+        base_frame: "base_link"
+        time_step: 0.1
+        max_time: 1.5
       optimizer:
-        linear_solver_type: "SPARSE_NORMAL_CHOLESKY"
-        param_tol: 1.0e-15
-        fn_tol: 1.0e-7
-        gradient_tol: 1.0e-10
-        max_iterations: 100
+        linear_solver_type: "DENSE_SCHUR"
+        param_tol: 1.0e-9
+        fn_tol: 1.0e-5
+        gradient_tol: 1.0e-8
+        max_iterations: 40
+        control_horizon: 18
+        parameter_block_length: 6
+        discretization: 1
         debug_optimizer: false
+        current_path_weight: 1.0
+        current_cmds_weight: 0.5
+        weights:
+          distance_weight: 20.0
+          social_weight: 120.0 # 120.0 # 400.0
+          velocity_weight: 10.0
+          angle_weight: 250.0
+          agent_angle_weight: 40.0 #50.0
+          velocity_feasibility_weight: 5.0
+          goal_align_weight: 10.0
+          obstacle_weight: 0.15
+          proxemics_weight: 100.0
 ```

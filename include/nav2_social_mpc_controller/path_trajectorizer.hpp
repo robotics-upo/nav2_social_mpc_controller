@@ -29,16 +29,18 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
 #include "tf2/utils.h"
-#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
+#include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 #include "tf2_ros/buffer.h"
 
-namespace nav2_social_mpc_controller {
+namespace nav2_social_mpc_controller
+{
 
 /**
  * @class nav2_path_trajectorizer::PathTrajectorizer
  * @brief Regulated pure pursuit controller plugin
  */
-class PathTrajectorizer {
+class PathTrajectorizer
+{
 public:
   /**
    * @brief Constructor for nav2_path_trajectorizer::PathTrajectorizer
@@ -56,8 +58,8 @@ public:
    * @param name Name of plugin
    * @param tf TF buffer
    */
-  void configure(const rclcpp_lifecycle::LifecycleNode::SharedPtr &parent,
-                 std::string name, std::shared_ptr<tf2_ros::Buffer> tf);
+  void configure(rclcpp_lifecycle::LifecycleNode::WeakPtr parent, std::string name,
+                 std::shared_ptr<tf2_ros::Buffer> tf);
   // std::shared_ptr<nav2_costmap_2d::CostmapSubscriber> costmap_sub,
   // std::shared_ptr<nav2_costmap_2d::FootprintSubscriber> footprint_sub);
 
@@ -83,12 +85,13 @@ public:
    * @param path_robot_pose, pose of the robot in the same frame of the path
    * @return trajectorized path
    */
-  // bool trajectorize(nav_msgs::msg::Path &path);
-  bool trajectorize(nav_msgs::msg::Path &path,
-                    const geometry_msgs::msg::PoseStamped &path_robot_pose,
-                    std::vector<geometry_msgs::msg::TwistStamped> &cmds);
+  bool trajectorize(nav_msgs::msg::Path& path, const geometry_msgs::msg::PoseStamped& path_robot_pose,
+                    std::vector<geometry_msgs::msg::TwistStamped>& cmds);
 
-  float inline getTimeStep() { return time_step_; }
+  float inline getTimeStep()
+  {
+    return time_step_;
+  }
 
 protected:
   /**
@@ -100,9 +103,9 @@ protected:
    * @param  dt The timestep to take
    * @return The new x position
    */
-  inline double computeNewXPosition(double xi, double vx, double vy,
-                                    double theta, double dt) {
-    return xi + (vx * cos(theta) + vy * cos(M_PI_2 + theta)) * dt;
+  inline double computeNewXPosition(double xi, double vx, double vy, double theta, double dt)
+  {
+    return xi + (vx * cos(theta) + vy * cos(M_PI_2 + theta)) * dt;  //
   }
 
   /**
@@ -114,8 +117,8 @@ protected:
    * @param  dt The timestep to take
    * @return The new y position
    */
-  inline double computeNewYPosition(double yi, double vx, double vy,
-                                    double theta, double dt) {
+  inline double computeNewYPosition(double yi, double vx, double vy, double theta, double dt)
+  {
     return yi + (vx * sin(theta) + vy * sin(M_PI_2 + theta)) * dt;
   }
 
@@ -126,32 +129,15 @@ protected:
    * @param  dt The timestep to take
    * @return The new orientation
    */
-  inline double computeNewThetaPosition(double thetai, double vth, double dt) {
+  inline double computeNewThetaPosition(double thetai, double vth, double dt)
+  {
     return thetai + vth * dt;
   }
 
-  /**
-   * @brief
-   *
-   * @param val
-   * @param min
-   * @param max
-   * @return float
-   */
-  float inline normalizeAngle(float val, float min, float max) {
-    float norm = 0.0;
-    if (val >= min)
-      norm = min + fmod((val - min), (max - min));
-    else
-      norm = max - fmod((min - val), (max - min));
-
-    return norm;
-  }
-
-  rclcpp_lifecycle::LifecycleNode::SharedPtr node_;
+  rclcpp_lifecycle::LifecycleNode::WeakPtr parent;
   std::shared_ptr<tf2_ros::Buffer> tf_;
   std::string plugin_name_;
-  rclcpp::Logger logger_{rclcpp::get_logger("PathTrajectorizer")};
+  rclcpp::Logger logger_{ rclcpp::get_logger("PathTrajectorizer") };
   rclcpp::Clock::SharedPtr clock_;
 
   // std::unique_ptr<nav2_constrained_smoother::Smoother> smoother_;
@@ -164,19 +150,16 @@ protected:
   bool omnidirectional_;
   double time_step_;
   double max_steps_;
-  // tf2::Duration transform_tolerance_;
-  rclcpp::Duration transform_tolerance_{0, 0};
+  rclcpp::Duration transform_tolerance_{ 0, 0 };
   std::string base_frame_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>>
-      received_path_pub_;
-  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>>
-      computed_path_pub_;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> received_path_pub_;
+  std::shared_ptr<rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::Path>> computed_path_pub_;
   // double rotate_to_heading_angular_vel_;
   // double max_lookahead_dist_;
   // double min_lookahead_dist_;
   // double lookahead_time_;
 };
 
-} // namespace nav2_social_mpc_controller
+}  // namespace nav2_social_mpc_controller
 
-#endif // NAV2_CONSTRAINED_SMOOTHER__CONSTRAINED_SMOOTHER_HPP_
+#endif  // NAV2_CONSTRAINED_SMOOTHER__CONSTRAINED_SMOOTHER_HPP_
